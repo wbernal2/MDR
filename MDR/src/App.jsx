@@ -4,14 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import Bins from './components/Bins'; // Import Bins component
 
 export default function App() {
-  const digits = Array.from({ length: 8000 }, () =>
-    Math.floor(Math.random() * 10)
-  );
+  const digits = Array.from({ length: 8000 }, () => Math.floor(Math.random() * 10));
+  const [selectedBin, setSelectedBin] = useState(null); // Track the selected bin
+  const [draggedIndex, setDraggedIndex] = useState(null); // Track the dragged number
+  const [sortedIndexes, setSortedIndexes] = useState([]);
+  const [highlightedIndexes, setHighlightedIndexes] = useState(new Set()); // Track highlighted numbers (the 9 numbers)
+  const containerRef = useRef(null);
+
+  const cols = 100; // Number of columns in the grid
 
   // Step 1: Generate scattered "feeling" numbers
   const validIndexes = new Set();
   const clusterSpacing = 400;
-
   for (let i = 0; i < digits.length; i += clusterSpacing) {
     const offset = Math.floor(Math.random() * 100);
     const index = i + offset;
@@ -19,12 +23,9 @@ export default function App() {
   }
 
   // Step 2: Calculate neighbors based on grid position
-  const cols = 100; // Number of columns in the grid (adjust if needed)
-  
-  // Correct neighbor calculation based on grid layout
   const getNeighborIndexes = (index) => {
     const neighbors = [];
-    const rowSize = cols; // Number of columns in the grid
+    const rowSize = cols;
 
     const offsets = [
       -rowSize - 1, -rowSize, -rowSize + 1, // Top row
@@ -61,9 +62,6 @@ export default function App() {
     neighbors.forEach((n) => neighborIndexes.add(n));
   });
 
-  const [sortedIndexes, setSortedIndexes] = useState([]);
-  const containerRef = useRef(null);
-
   useEffect(() => {
     const container = containerRef.current;
     if (container) {
@@ -74,22 +72,12 @@ export default function App() {
   const handleScroll = () => {
     const container = containerRef.current;
     const buffer = 100;
-
     if (container) {
-      const {
-        scrollTop,
-        scrollLeft,
-        scrollHeight,
-        scrollWidth,
-        clientHeight,
-        clientWidth,
-      } = container;
-
+      const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = container;
       const tooFarLeft = scrollLeft < buffer;
       const tooFarRight = scrollLeft > scrollWidth - clientWidth - buffer;
       const tooFarUp = scrollTop < buffer;
       const tooFarDown = scrollTop > scrollHeight - clientHeight - buffer;
-
       if (tooFarLeft || tooFarRight || tooFarUp || tooFarDown) {
         container.scrollTo(scrollWidth / 2, scrollHeight / 2);
       }
@@ -99,9 +87,22 @@ export default function App() {
   const handleDigitClick = (idx) => {
     if (!validIndexes.has(idx)) return;
 
-    setSortedIndexes((prev) =>
-      prev.includes(idx) ? prev : [...prev, idx]
-    );
+    console.log("Selected Digit:", idx);
+
+    // Get the surrounding 9 numbers (including the clicked number itself)
+    const neighbors = getNeighborIndexes(idx);
+    neighbors.push(idx); // Include the center number itself
+    setHighlightedIndexes(new Set(neighbors)); // Set the highlighted numbers
+    setSortedIndexes((prev) => prev.includes(idx) ? prev : [...prev, idx]);
+  };
+
+  const handleBinClick = (binNum) => {
+    console.log("Bin selected: ", binNum);
+    setSelectedBin(binNum);
+    if (draggedIndex !== null) {
+      setSortedIndexes((prev) => [...prev, draggedIndex]);
+      setDraggedIndex(null); // Clear the dragged index once it's placed in a bin
+    }
   };
 
   return (
@@ -119,6 +120,7 @@ export default function App() {
                 const isSorted = sortedIndexes.includes(idx);
                 const isValid = validIndexes.has(idx);
                 const isNeighbor = neighborIndexes.has(idx);
+                const isHighlighted = highlightedIndexes.has(idx); // Check if the current number is highlighted
 
                 let classes = "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
 
@@ -128,6 +130,9 @@ export default function App() {
                   classes += " text-blue-400 hover:scale-150";
                 } else if (isNeighbor) {
                   classes += " text-green-300 hover:scale-110 animate-pulse";
+                } else if (isHighlighted) {
+                  // Apply a different effect to the highlighted numbers
+                  classes += " text-red-500 scale-110 animate-pulse"; // Example highlighted effect
                 } else {
                   classes += " text-green-400 hover:scale-105";
                 }
@@ -144,7 +149,7 @@ export default function App() {
       </div>
 
       {/* Step 2: Insert Bins Component here */}
-      <Bins />
+      <Bins handleBinClick={handleBinClick} />
     </div>
   );
 }
