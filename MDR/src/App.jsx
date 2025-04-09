@@ -13,9 +13,9 @@ export default function App() {
   const containerRef = useRef(null);
 
   const cols = 100;
-
   const validIndexes = new Set();
   const clusterSpacing = 400;
+
   for (let i = 0; i < digits.length; i += clusterSpacing) {
     const offset = Math.floor(Math.random() * 100);
     const index = i + offset;
@@ -82,7 +82,6 @@ export default function App() {
 
   const handleDigitClick = (idx) => {
     if (!validIndexes.has(idx)) return;
-    console.log("Selected Digit:", idx);
     const neighbors = getNeighborIndexes(idx);
     neighbors.push(idx);
     setHighlightedIndexes(new Set(neighbors));
@@ -90,16 +89,12 @@ export default function App() {
   };
 
   const handleBinClick = (binNum) => {
-    console.log("Bin selected: ", binNum);
     setSelectedBin(binNum);
-
     setAnimatingIndexes(new Set(highlightedIndexes));
 
     setTimeout(() => {
-      setSortedIndexes((prev) => [
-        ...prev,
-        ...Array.from(highlightedIndexes).filter((idx) => !prev.includes(idx))
-      ]);
+      // ✅ Reset all highlighted numbers to green
+      setSortedIndexes((prev) => prev.filter((idx) => !highlightedIndexes.has(idx)));
       setAnimatingIndexes(new Set());
       setHighlightedIndexes(new Set());
       setBinProgress((prev) => {
@@ -107,7 +102,7 @@ export default function App() {
         copy[binNum - 1] = Math.min(copy[binNum - 1] + 10, 100);
         return copy;
       });
-    }, 2500); // Extended duration for animation
+    }, 2500);
   };
 
   return (
