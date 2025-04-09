@@ -1,19 +1,19 @@
 import NumberTile from './components/NumberTile';
-
 import { useEffect, useRef, useState } from "react";
-import Bins from './components/Bins'; // Import Bins component
+import Bins from './components/Bins';
 
 export default function App() {
   const digits = Array.from({ length: 8000 }, () => Math.floor(Math.random() * 10));
-  const [selectedBin, setSelectedBin] = useState(null); // Track the selected bin
-  const [draggedIndex, setDraggedIndex] = useState(null); // Track the dragged number
+  const [selectedBin, setSelectedBin] = useState(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
   const [sortedIndexes, setSortedIndexes] = useState([]);
-  const [highlightedIndexes, setHighlightedIndexes] = useState(new Set()); // Track highlighted numbers (the 9 numbers)
+  const [highlightedIndexes, setHighlightedIndexes] = useState(new Set());
+  const [animatingIndexes, setAnimatingIndexes] = useState(new Set());
+  const [binProgress, setBinProgress] = useState([0, 0, 0, 0, 0]);
   const containerRef = useRef(null);
 
-  const cols = 100; // Number of columns in the grid
+  const cols = 100;
 
-  // Step 1: Generate scattered "feeling" numbers
   const validIndexes = new Set();
   const clusterSpacing = 400;
   for (let i = 0; i < digits.length; i += clusterSpacing) {
@@ -22,27 +22,24 @@ export default function App() {
     if (index < digits.length) validIndexes.add(index);
   }
 
-  // Step 2: Calculate neighbors based on grid position
   const getNeighborIndexes = (index) => {
     const neighbors = [];
     const rowSize = cols;
 
     const offsets = [
-      -rowSize - 1, -rowSize, -rowSize + 1, // Top row
-      -1,               /*X*/       +1,     // Left and right of center
-      +rowSize - 1, +rowSize, +rowSize + 1, // Bottom row
+      -rowSize - 1, -rowSize, -rowSize + 1,
+      -1, +1,
+      +rowSize - 1, +rowSize, +rowSize + 1,
     ];
 
-    const row = Math.floor(index / rowSize); // Calculate the row of the digit
-    const col = index % rowSize; // Calculate the column of the digit
+    const row = Math.floor(index / rowSize);
+    const col = index % rowSize;
 
-    // Calculate each neighbor index based on row/column position
     for (const offset of offsets) {
       const neighbor = index + offset;
       const neighborRow = Math.floor(neighbor / rowSize);
       const neighborCol = neighbor % rowSize;
 
-      // Make sure the neighbor is within bounds of the grid
       if (
         neighbor >= 0 &&
         neighbor < digits.length &&
@@ -52,7 +49,6 @@ export default function App() {
         neighbors.push(neighbor);
       }
     }
-
     return neighbors;
   };
 
@@ -86,28 +82,36 @@ export default function App() {
 
   const handleDigitClick = (idx) => {
     if (!validIndexes.has(idx)) return;
-
     console.log("Selected Digit:", idx);
-
-    // Get the surrounding 9 numbers (including the clicked number itself)
     const neighbors = getNeighborIndexes(idx);
-    neighbors.push(idx); // Include the center number itself
-    setHighlightedIndexes(new Set(neighbors)); // Set the highlighted numbers
+    neighbors.push(idx);
+    setHighlightedIndexes(new Set(neighbors));
     setSortedIndexes((prev) => prev.includes(idx) ? prev : [...prev, idx]);
   };
 
   const handleBinClick = (binNum) => {
     console.log("Bin selected: ", binNum);
     setSelectedBin(binNum);
-    if (draggedIndex !== null) {
-      setSortedIndexes((prev) => [...prev, draggedIndex]);
-      setDraggedIndex(null); // Clear the dragged index once it's placed in a bin
-    }
+
+    setAnimatingIndexes(new Set(highlightedIndexes));
+
+    setTimeout(() => {
+      setSortedIndexes((prev) => [
+        ...prev,
+        ...Array.from(highlightedIndexes).filter((idx) => !prev.includes(idx))
+      ]);
+      setAnimatingIndexes(new Set());
+      setHighlightedIndexes(new Set());
+      setBinProgress((prev) => {
+        const copy = [...prev];
+        copy[binNum - 1] = Math.min(copy[binNum - 1] + 10, 100);
+        return copy;
+      });
+    }, 2500); // Extended duration for animation
   };
 
   return (
     <div className="flex flex-col h-screen bg-black">
-      {/* Infinite scroll container */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -120,19 +124,21 @@ export default function App() {
                 const isSorted = sortedIndexes.includes(idx);
                 const isValid = validIndexes.has(idx);
                 const isNeighbor = neighborIndexes.has(idx);
-                const isHighlighted = highlightedIndexes.has(idx); // Check if the current number is highlighted
+                const isHighlighted = highlightedIndexes.has(idx);
+                const isAnimating = animatingIndexes.has(idx);
 
                 let classes = "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
 
                 if (isSorted) {
                   classes += " text-yellow-300 scale-110";
+                } else if (isAnimating) {
+                  classes += " text-white fly-to-bin";
                 } else if (isValid) {
                   classes += " text-blue-400 hover:scale-150";
                 } else if (isNeighbor) {
                   classes += " text-green-300 hover:scale-110 animate-pulse";
                 } else if (isHighlighted) {
-                  // Apply a different effect to the highlighted numbers
-                  classes += " text-red-500 scale-110 animate-pulse"; // Example highlighted effect
+                  classes += " text-red-500 scale-110 animate-pulse";
                 } else {
                   classes += " text-green-400 hover:scale-105";
                 }
@@ -148,8 +154,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Step 2: Insert Bins Component here */}
-      <Bins handleBinClick={handleBinClick} />
+      <Bins handleBinClick={handleBinClick} binProgress={binProgress} />
     </div>
   );
 }

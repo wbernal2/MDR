@@ -5,11 +5,8 @@ body {
   color: #00ff00;
   font-family: monospace;
 }
-@keyframes flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.92; }
-}
 
+/* Flicker animation for glowing effect */
 @keyframes flicker {
   0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
     opacity: 1;
@@ -22,20 +19,13 @@ body {
 .flicker {
   animation: flicker 1.8s infinite;
 }
-/* Add this CSS in index.css for animation */
-@keyframes move-to-bin {
-  0% {
-    transform: translate(0, 0);
-  }
-  100% {
-    transform: translate(var(--target-x), var(--target-y));
-  }
-}
 
-.animate-move-to-bin {
-  animation: move-to-bin 0.5s ease-in-out forwards;
-}
-/* Shake/Warp effect for valid numbers */
+
+
+
+
+
+/* Shake effect used to indicate nearby/valid numbers */
 @keyframes shake {
   0% {
     transform: translateX(0);
@@ -57,3 +47,34 @@ body {
 .shake {
   animation: shake 0.5s ease-in-out;
 }
+@keyframes fly-to-bin {
+  0% {
+    transform: scale(1) translate(0, 0) rotate(0deg);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  30% {
+    transform: scale(1.2) translate(40px, 100px) rotate(90deg);
+    opacity: 0.9;
+    filter: blur(1px);
+  }
+  70% {
+    transform: scale(0.6) translate(-30px, 500px) rotate(200deg);
+    opacity: 0.4;
+    filter: blur(3px);
+  }
+  100% {
+    transform: scale(0) translate(0, 900px) rotate(720deg);
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+
+
+.fly-to-bin {
+  animation: fly-to-bin 2.5s ease-in-out forwards;
+  animation-delay: 0s;
+  animation-fill-mode: forwards;
+  pointer-events: none; /* avoid hover/interaction glitches */
+}
+

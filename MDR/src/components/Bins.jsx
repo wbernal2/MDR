@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Bins = ({ handleBinClick }) => {
+const Bins = ({ handleBinClick, binProgress }) => {
   console.log("Rendering Bins Component...");
 
   return (
@@ -8,10 +8,12 @@ const Bins = ({ handleBinClick }) => {
       {[...Array(5)].map((_, idx) => (
         <div
           key={idx}
-          onClick={() => handleBinClick(idx + 1)} // Pass bin number when clicked
+          onClick={() => handleBinClick(idx + 1)}
           className="w-1/6 h-20 bg-gray-700 border-2 border-green-400 rounded-lg cursor-pointer hover:bg-gray-600 transition-all"
         >
-          <p className="text-center text-white">Bin {idx + 1}</p>
+          <p className="text-center text-white">
+            Bin {idx + 1} - {binProgress[idx]}%
+          </p>
         </div>
       ))}
     </div>
