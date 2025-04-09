@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+body {
+  background-color: black;
+  color: #00ff00;
+  font-family: monospace;
+}
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.92; }
+}
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    opacity: 1;
+  }
+  20%, 24%, 55% {
+    opacity: 0.85;
+  }
+}
+
+.flicker {
+  animation: flicker 1.8s infinite;
+}
+/* Add this CSS in index.css for animation */
+@keyframes move-to-bin {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(var(--target-x), var(--target-y));
+  }
+}
+
+.animate-move-to-bin {
+  animation: move-to-bin 0.5s ease-in-out forwards;
+}
