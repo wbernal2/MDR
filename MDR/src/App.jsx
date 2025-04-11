@@ -11,12 +11,13 @@ export default function App() {
   const [binProgress, setBinProgress] = useState([0, 0, 0, 0, 0]);
   const containerRef = useRef(null);
   const binRefs = useRef([]);
-  const spanRefs = useRef({}); // New: store DOM refs of digits
+  const spanRefs = useRef({});
 
   const cols = 100;
   const validIndexes = new Set();
-  const clusterSpacing = 400;
+  const shakingIndexes = new Set(); // NEW
 
+  const clusterSpacing = 400;
   for (let i = 0; i < digits.length; i += clusterSpacing) {
     const offset = Math.floor(Math.random() * 100);
     const index = i + offset;
@@ -26,13 +27,11 @@ export default function App() {
   const getNeighborIndexes = (index) => {
     const neighbors = [];
     const rowSize = cols;
-
     const offsets = [
       -rowSize - 1, -rowSize, -rowSize + 1,
       -1, +1,
       +rowSize - 1, +rowSize, +rowSize + 1,
     ];
-
     const row = Math.floor(index / rowSize);
     const col = index % rowSize;
 
@@ -53,10 +52,9 @@ export default function App() {
     return neighbors;
   };
 
-  const neighborIndexes = new Set();
-  validIndexes.forEach((index) => {
-    const neighbors = getNeighborIndexes(index);
-    neighbors.forEach((n) => neighborIndexes.add(n));
+  // Fill shakingIndexes with initial neighbors of valid digits
+  validIndexes.forEach((idx) => {
+    getNeighborIndexes(idx).forEach((n) => shakingIndexes.add(n));
   });
 
   useEffect(() => {
@@ -71,11 +69,10 @@ export default function App() {
     const buffer = 100;
     if (container) {
       const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = container;
-      const tooFarLeft = scrollLeft < buffer;
-      const tooFarRight = scrollLeft > scrollWidth - clientWidth - buffer;
-      const tooFarUp = scrollTop < buffer;
-      const tooFarDown = scrollTop > scrollHeight - clientHeight - buffer;
-      if (tooFarLeft || tooFarRight || tooFarUp || tooFarDown) {
+      if (
+        scrollLeft < buffer || scrollLeft > scrollWidth - clientWidth - buffer ||
+        scrollTop < buffer || scrollTop > scrollHeight - clientHeight - buffer
+      ) {
         container.scrollTo(scrollWidth / 2, scrollHeight / 2);
       }
     }
@@ -86,42 +83,46 @@ export default function App() {
     const neighbors = getNeighborIndexes(idx);
     neighbors.push(idx);
     setHighlightedIndexes(new Set(neighbors));
-    setSortedIndexes((prev) => prev.includes(idx) ? prev : [...prev, idx]);
+    setSortedIndexes((prev) => (prev.includes(idx) ? prev : [...prev, idx]));
   };
 
   const handleBinClick = (binNum) => {
     setSelectedBin(binNum);
     setAnimatingIndexes(new Set(highlightedIndexes));
 
-    // Set animation targets individually
     const binEl = binRefs.current[binNum - 1];
     const containerRect = containerRef.current.getBoundingClientRect();
     const binRect = binEl.getBoundingClientRect();
 
-    highlightedIndexes.forEach((idx) => {
-      const digitSpan = spanRefs.current[idx];
-      if (!digitSpan) return;
+    requestAnimationFrame(() => {
+      highlightedIndexes.forEach((idx) => {
+        const digitSpan = spanRefs.current[idx];
+        if (!digitSpan) return;
 
-      const digitRect = digitSpan.getBoundingClientRect();
+        const digitRect = digitSpan.getBoundingClientRect();
+        const dx = binRect.left + binRect.width / 2 - digitRect.left;
+        const dy = binRect.top + binRect.height / 2 - digitRect.top;
 
-      const dx = binRect.left + binRect.width / 2 - digitRect.left;
-      const dy = binRect.top + binRect.height / 2 - digitRect.top;
-
-      digitSpan.style.setProperty("--bin-x", `${dx}px`);
-      digitSpan.style.setProperty("--bin-y", `${dy}px`);
-      digitSpan.classList.add("fly-to-bin");
+        digitSpan.style.setProperty("--bin-x", `${dx}px`);
+        digitSpan.style.setProperty("--bin-y", `${dy}px`);
+        digitSpan.classList.add("fly-to-bin");
+      });
     });
 
     setTimeout(() => {
       setSortedIndexes((prev) => prev.filter((idx) => !highlightedIndexes.has(idx)));
       setAnimatingIndexes(new Set());
-      setHighlightedIndexes(new Set());
 
       highlightedIndexes.forEach((idx) => {
         const span = spanRefs.current[idx];
-        if (span) span.classList.remove("fly-to-bin");
+        if (span) {
+          span.classList.remove("fly-to-bin");
+          span.style.removeProperty("--bin-x");
+          span.style.removeProperty("--bin-y");
+        }
       });
 
+      setHighlightedIndexes(new Set());
       setBinProgress((prev) => {
         const copy = [...prev];
         copy[binNum - 1] = Math.min(copy[binNum - 1] + 10, 100);
@@ -143,23 +144,29 @@ export default function App() {
               {digits.map((digit, idx) => {
                 const isSorted = sortedIndexes.includes(idx);
                 const isValid = validIndexes.has(idx);
-                const isNeighbor = neighborIndexes.has(idx);
                 const isHighlighted = highlightedIndexes.has(idx);
                 const isAnimating = animatingIndexes.has(idx);
+                const isShaking = shakingIndexes.has(idx); // NEW
 
-                let classes = "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
+                let classes =
+                  "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
                 if (isSorted) {
                   classes += " text-yellow-300 scale-110";
                 } else if (isAnimating) {
                   classes += " text-white";
                 } else if (isValid) {
-                  classes += " text-blue-400 hover:scale-150";
-                } else if (isNeighbor) {
-                  classes += " text-green-300 hover:scale-110 animate-pulse";
+                  classes += " text-green-270 hover:scale-150 wiggle-hover";
                 } else if (isHighlighted) {
-                  classes += " text-red-500 scale-110 animate-pulse";
+                  classes += " text-red-500 scale-110 animate-pulse wiggle-hover";
+                } else if (isShaking) {
+                  classes += " text-green-300 hover:scale-110 shake"; 
                 } else {
-                  classes += " text-green-400 hover:scale-105";
+                  classes += " text-green-400 hover:scale-120 wiggle-hover hover:text-white transition-all duration-300 ease-in-out";
+
+                  
+
+
+
                 }
 
                 return (
@@ -178,7 +185,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
       <Bins handleBinClick={handleBinClick} binProgress={binProgress} binRefs={binRefs} />
     </div>
   );

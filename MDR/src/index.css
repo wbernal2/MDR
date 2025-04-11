@@ -6,7 +6,7 @@ body {
   font-family: monospace;
 }
 
-/* === Flicker animation for glowing effect === */
+/* Flicker for fun (not used for shaking) */
 @keyframes flicker {
   0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
     opacity: 1;
@@ -20,20 +20,23 @@ body {
   animation: flicker 1.8s infinite;
 }
 
-/* === Shake effect for valid number neighbors === */
-@keyframes shake {
-  0%   { transform: translateX(0); }
-  25%  { transform: translateX(-5px); }
-  50%  { transform: translateX(5px); }
-  75%  { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
+/* === Repurposed Shake: now a slow fade/pulse effect === */
+@keyframes soft-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.35);
+  }
 }
 
 .shake {
-  animation: shake 0.5s ease-in-out;
+  animation: soft-pulse 2.5s ease-in-out infinite;
 }
 
-/* === Fly-to-bin animation effect === */
+/* === Fly-to-bin animation === */
 @keyframes fly-to-bin {
   0% {
     transform: translate(0, 0);
@@ -47,15 +50,19 @@ body {
 
 .fly-to-bin {
   animation: fly-to-bin 2.5s ease-in-out forwards;
-  position: absolute; /* Needed so it can move independently */
+  position: absolute;
   z-index: 50;
   pointer-events: none;
+  will-change: transform;
+}
+@keyframes wiggle {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-2deg); }
+  50%  { transform: rotate(2deg); }
+  75%  { transform: rotate(-2deg); }
+  100% { transform: rotate(0deg); }
 }
 
-
-.fly-to-bin {
-  animation: fly-to-bin 2.5s ease-in-out forwards;
-  pointer-events: none;
-  will-change: transform;
-  animation-fill-mode: forwards;
+.wiggle-hover:hover {
+  animation: wiggle 1.9s ease-in-out;
 }
