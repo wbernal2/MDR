@@ -136,7 +136,7 @@ export default function App() {
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-scroll bg-black text-green-400 font-mono text-xl"
+        className="flex-1 overflow-scroll bg-black text-cyan-200 font-mono text-xl"
       >
         <div className="w-[500vw] h-[500vh] relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-10 min-w-[8000px]">
@@ -151,17 +151,17 @@ export default function App() {
                 let classes =
                   "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
                 if (isSorted) {
-                  classes += " text-yellow-300 scale-110";
+                  classes += " text-cyan-400 scale-135";
                 } else if (isAnimating) {
                   classes += " text-white";
                 } else if (isValid) {
-                  classes += " text-green-270 hover:scale-150 wiggle-hover";
+                  classes += " text-blue-300 hover:scale-170 wiggle-hover";
                 } else if (isHighlighted) {
-                  classes += " text-red-500 scale-110 animate-pulse wiggle-hover";
+                  classes += " text-cyan-500 scale-160 animate-pulse wiggle-hover";
                 } else if (isShaking) {
-                  classes += " text-green-300 hover:scale-110 shake"; 
+                  classes += " text-cyan-500 hover:scale-160 shake"; 
                 } else {
-                  classes += " text-green-400 hover:scale-120 wiggle-hover hover:text-white transition-all duration-300 ease-in-out";
+                  classes += " text-[#00ffff] hover:scale-120 wiggle-hover hover:text-white transition-all duration-300 ease-in-out";
 
                   
 
