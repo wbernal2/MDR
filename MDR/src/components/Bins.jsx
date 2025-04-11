@@ -1,23 +1,26 @@
 import React from 'react';
 
-const Bins = ({ handleBinClick, binProgress }) => {
-  console.log("Rendering Bins Component...");
-
+export default function Bins({ handleBinClick, binProgress, binRefs }) {
   return (
-    <div className="absolute bottom-0 left-0 w-full flex justify-around p-4">
-      {[...Array(5)].map((_, idx) => (
+    <div className="flex justify-between items-center p-4 border-t border-green-400 bg-black">
+      {[1, 2, 3, 4, 5].map((binNum, idx) => (
         <div
-          key={idx}
-          onClick={() => handleBinClick(idx + 1)}
-          className="w-1/6 h-20 bg-gray-700 border-2 border-green-400 rounded-lg cursor-pointer hover:bg-gray-600 transition-all"
+          key={binNum}
+          ref={el => binRefs.current[idx] = el}
+          className="flex flex-col items-center cursor-pointer"
+          onClick={() => handleBinClick(binNum)}
         >
-          <p className="text-center text-white">
-            Bin {idx + 1} - {binProgress[idx]}%
-          </p>
+          <div className="w-16 h-16 border-2 border-green-400 flex items-center justify-center text-lg">
+            Bin {binNum}
+          </div>
+          <div className="w-16 h-2 bg-green-900 mt-1">
+            <div
+              className="bg-green-400 h-full transition-all"
+              style={{ width: `${binProgress[idx]}%` }}
+            />
+          </div>
         </div>
       ))}
     </div>
   );
-};
-
-export default Bins;
+}

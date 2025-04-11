@@ -6,7 +6,7 @@ body {
   font-family: monospace;
 }
 
-/* Flicker animation for glowing effect */
+/* === Flicker animation for glowing effect === */
 @keyframes flicker {
   0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
     opacity: 1;
@@ -20,61 +20,42 @@ body {
   animation: flicker 1.8s infinite;
 }
 
-
-
-
-
-
-/* Shake effect used to indicate nearby/valid numbers */
+/* === Shake effect for valid number neighbors === */
 @keyframes shake {
-  0% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  50% {
-    transform: translateX(5px);
-  }
-  75% {
-    transform: translateX(-5px);
-  }
-  100% {
-    transform: translateX(0);
-  }
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-5px); }
+  50%  { transform: translateX(5px); }
+  75%  { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
 }
 
 .shake {
   animation: shake 0.5s ease-in-out;
 }
+
+/* === Fly-to-bin animation effect === */
 @keyframes fly-to-bin {
   0% {
-    transform: scale(1) translate(0, 0) rotate(0deg);
+    transform: translate(0, 0);
     opacity: 1;
-    filter: blur(0px);
-  }
-  30% {
-    transform: scale(1.2) translate(40px, 100px) rotate(90deg);
-    opacity: 0.9;
-    filter: blur(1px);
-  }
-  70% {
-    transform: scale(0.6) translate(-30px, 500px) rotate(200deg);
-    opacity: 0.4;
-    filter: blur(3px);
   }
   100% {
-    transform: scale(0) translate(0, 900px) rotate(720deg);
+    transform: translate(var(--bin-x), var(--bin-y)) scale(0.2);
     opacity: 0;
-    filter: blur(6px);
   }
+}
+
+.fly-to-bin {
+  animation: fly-to-bin 2.5s ease-in-out forwards;
+  position: absolute; /* Needed so it can move independently */
+  z-index: 50;
+  pointer-events: none;
 }
 
 
 .fly-to-bin {
   animation: fly-to-bin 2.5s ease-in-out forwards;
-  animation-delay: 0s;
+  pointer-events: none;
+  will-change: transform;
   animation-fill-mode: forwards;
-  pointer-events: none; /* avoid hover/interaction glitches */
 }
-

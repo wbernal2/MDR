@@ -5,12 +5,13 @@ import Bins from './components/Bins';
 export default function App() {
   const digits = Array.from({ length: 8000 }, () => Math.floor(Math.random() * 10));
   const [selectedBin, setSelectedBin] = useState(null);
-  const [draggedIndex, setDraggedIndex] = useState(null);
   const [sortedIndexes, setSortedIndexes] = useState([]);
   const [highlightedIndexes, setHighlightedIndexes] = useState(new Set());
   const [animatingIndexes, setAnimatingIndexes] = useState(new Set());
   const [binProgress, setBinProgress] = useState([0, 0, 0, 0, 0]);
   const containerRef = useRef(null);
+  const binRefs = useRef([]);
+  const spanRefs = useRef({}); // New: store DOM refs of digits
 
   const cols = 100;
   const validIndexes = new Set();
@@ -92,11 +93,35 @@ export default function App() {
     setSelectedBin(binNum);
     setAnimatingIndexes(new Set(highlightedIndexes));
 
+    // Set animation targets individually
+    const binEl = binRefs.current[binNum - 1];
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const binRect = binEl.getBoundingClientRect();
+
+    highlightedIndexes.forEach((idx) => {
+      const digitSpan = spanRefs.current[idx];
+      if (!digitSpan) return;
+
+      const digitRect = digitSpan.getBoundingClientRect();
+
+      const dx = binRect.left + binRect.width / 2 - digitRect.left;
+      const dy = binRect.top + binRect.height / 2 - digitRect.top;
+
+      digitSpan.style.setProperty("--bin-x", `${dx}px`);
+      digitSpan.style.setProperty("--bin-y", `${dy}px`);
+      digitSpan.classList.add("fly-to-bin");
+    });
+
     setTimeout(() => {
-      // ✅ Reset all highlighted numbers to green
       setSortedIndexes((prev) => prev.filter((idx) => !highlightedIndexes.has(idx)));
       setAnimatingIndexes(new Set());
       setHighlightedIndexes(new Set());
+
+      highlightedIndexes.forEach((idx) => {
+        const span = spanRefs.current[idx];
+        if (span) span.classList.remove("fly-to-bin");
+      });
+
       setBinProgress((prev) => {
         const copy = [...prev];
         copy[binNum - 1] = Math.min(copy[binNum - 1] + 10, 100);
@@ -114,7 +139,7 @@ export default function App() {
       >
         <div className="w-[500vw] h-[500vh] relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-10 min-w-[8000px]">
-            <div className="grid grid-cols-[repeat(100,minmax(3rem,1fr))] gap-x-6 gap-y-6">
+            <div className="grid grid-cols-[repeat(100,minmax(3rem,1fr))] gap-x-10 gap-y-10 relative">
               {digits.map((digit, idx) => {
                 const isSorted = sortedIndexes.includes(idx);
                 const isValid = validIndexes.has(idx);
@@ -123,11 +148,10 @@ export default function App() {
                 const isAnimating = animatingIndexes.has(idx);
 
                 let classes = "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
-
                 if (isSorted) {
                   classes += " text-yellow-300 scale-110";
                 } else if (isAnimating) {
-                  classes += " text-white fly-to-bin";
+                  classes += " text-white";
                 } else if (isValid) {
                   classes += " text-blue-400 hover:scale-150";
                 } else if (isNeighbor) {
@@ -139,7 +163,13 @@ export default function App() {
                 }
 
                 return (
-                  <span key={idx} onClick={() => handleDigitClick(idx)} className={classes}>
+                  <span
+                    key={idx}
+                    ref={(el) => (spanRefs.current[idx] = el)}
+                    onClick={() => handleDigitClick(idx)}
+                    className={classes}
+                    style={{ position: "relative" }}
+                  >
                     {digit}
                   </span>
                 );
@@ -149,7 +179,7 @@ export default function App() {
         </div>
       </div>
 
-      <Bins handleBinClick={handleBinClick} binProgress={binProgress} />
+      <Bins handleBinClick={handleBinClick} binProgress={binProgress} binRefs={binRefs} />
     </div>
   );
 }
