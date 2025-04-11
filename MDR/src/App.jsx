@@ -9,13 +9,14 @@ export default function App() {
   const [highlightedIndexes, setHighlightedIndexes] = useState(new Set());
   const [animatingIndexes, setAnimatingIndexes] = useState(new Set());
   const [binProgress, setBinProgress] = useState([0, 0, 0, 0, 0]);
+
   const containerRef = useRef(null);
   const binRefs = useRef([]);
   const spanRefs = useRef({});
 
   const cols = 100;
   const validIndexes = new Set();
-  const shakingIndexes = new Set(); // NEW
+  const shakingIndexes = new Set();
 
   const clusterSpacing = 400;
   for (let i = 0; i < digits.length; i += clusterSpacing) {
@@ -52,7 +53,6 @@ export default function App() {
     return neighbors;
   };
 
-  // Fill shakingIndexes with initial neighbors of valid digits
   validIndexes.forEach((idx) => {
     getNeighborIndexes(idx).forEach((n) => shakingIndexes.add(n));
   });
@@ -131,12 +131,24 @@ export default function App() {
     }, 2500);
   };
 
+  const totalProgress = Math.floor(
+    binProgress.reduce((acc, val) => acc + val, 0) / binProgress.length
+  );
+
   return (
-    <div className="flex flex-col h-screen bg-black">
+    <div className="fisheye-effect scale-[0.89] origin-center flex flex-col h-screen bg-[#050b12] text-cyan-300 font-mono text-xl">
+
+      {/* Top Banner */}
+      <div className="flex justify-between items-center px-6 py-3 border-b border-cyan-400 text-cyan-300 text-lg uppercase tracking-wide scanlines glow">
+        <div className="text-left">Cold Harbor</div>
+        <div className="text-right">{totalProgress}% Complete</div>
+      </div>
+
+      {/* Number Grid */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-scroll bg-black text-cyan-200 font-mono text-xl"
+        className="flex-1 overflow-scroll"
       >
         <div className="w-[500vw] h-[500vh] relative">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-10 min-w-[8000px]">
@@ -146,27 +158,22 @@ export default function App() {
                 const isValid = validIndexes.has(idx);
                 const isHighlighted = highlightedIndexes.has(idx);
                 const isAnimating = animatingIndexes.has(idx);
-                const isShaking = shakingIndexes.has(idx); // NEW
+                const isShaking = shakingIndexes.has(idx);
 
                 let classes =
-                  "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform";
+                  "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform glow";
                 if (isSorted) {
-                  classes += " text-cyan-400 scale-135";
+                  classes += " text-cyan-300 scale-110";
                 } else if (isAnimating) {
                   classes += " text-white";
                 } else if (isValid) {
-                  classes += " text-blue-300 hover:scale-170 wiggle-hover";
+                  classes += " text-blue-300 hover:scale-155 wiggle-hover";
                 } else if (isHighlighted) {
-                  classes += " text-cyan-500 scale-160 animate-pulse wiggle-hover";
+                  classes += " text-cyan-500 scale-165 animate-pulse";
                 } else if (isShaking) {
-                  classes += " text-cyan-500 hover:scale-160 shake"; 
+                  classes += " text-cyan-500 hover:scale-180 shake";
                 } else {
-                  classes += " text-[#00ffff] hover:scale-120 wiggle-hover hover:text-white transition-all duration-300 ease-in-out";
-
-                  
-
-
-
+                  classes += " text-cyan-500 hover:scale-105";
                 }
 
                 return (
@@ -185,6 +192,7 @@ export default function App() {
           </div>
         </div>
       </div>
+
       <Bins handleBinClick={handleBinClick} binProgress={binProgress} binRefs={binRefs} />
     </div>
   );
