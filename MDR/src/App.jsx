@@ -20,7 +20,7 @@ export default function App() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      const generatedDigits = Array.from({ length: 8000 }, () => Math.floor(Math.random() * 10));
+      const generatedDigits = Array.from({ length: 10000 }, () => Math.floor(Math.random() * 10));
       const validSet = new Set();
       const shakeSet = new Set();
 
