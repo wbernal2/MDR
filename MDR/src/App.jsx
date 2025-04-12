@@ -1,9 +1,11 @@
-import NumberTile from './components/NumberTile';
 import { useEffect, useRef, useState } from "react";
 import Bins from './components/Bins';
 
 export default function App() {
-  const digits = Array.from({ length: 8000 }, () => Math.floor(Math.random() * 10));
+  const [isLoading, setIsLoading] = useState(true);
+  const [digits, setDigits] = useState([]);
+  const [validIndexes, setValidIndexes] = useState(new Set());
+  const [shakingIndexes, setShakingIndexes] = useState(new Set());
   const [selectedBin, setSelectedBin] = useState(null);
   const [sortedIndexes, setSortedIndexes] = useState([]);
   const [highlightedIndexes, setHighlightedIndexes] = useState(new Set());
@@ -15,17 +17,58 @@ export default function App() {
   const spanRefs = useRef({});
 
   const cols = 100;
-  const validIndexes = new Set();
-  const shakingIndexes = new Set();
 
-  const clusterSpacing = 400;
-  for (let i = 0; i < digits.length; i += clusterSpacing) {
-    const offset = Math.floor(Math.random() * 100);
-    const index = i + offset;
-    if (index < digits.length) validIndexes.add(index);
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const generatedDigits = Array.from({ length: 8000 }, () => Math.floor(Math.random() * 10));
+      const validSet = new Set();
+      const shakeSet = new Set();
 
-  const getNeighborIndexes = (index) => {
+      const clusterSpacing = 400;
+      for (let i = 0; i < generatedDigits.length; i += clusterSpacing) {
+        const offset = Math.floor(Math.random() * 100);
+        const index = i + offset;
+        if (index < generatedDigits.length) validSet.add(index);
+      }
+
+      validSet.forEach((idx) => {
+        getNeighborIndexes(idx, cols, generatedDigits.length).forEach((n) => shakeSet.add(n));
+      });
+
+      setDigits(generatedDigits);
+      setValidIndexes(validSet);
+      setShakingIndexes(shakeSet);
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container && !isLoading) {
+      container.scrollTo(container.scrollWidth / 2, container.scrollHeight / 2);
+    }
+  }, [isLoading]);
+
+  const handleScroll = () => {
+    const container = containerRef.current;
+    const buffer = 100;
+
+    if (container) {
+      const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = container;
+      const tooFarLeft = scrollLeft < buffer;
+      const tooFarRight = scrollLeft > scrollWidth - clientWidth - buffer;
+      const tooFarUp = scrollTop < buffer;
+      const tooFarDown = scrollTop > scrollHeight - clientHeight - buffer;
+
+      if (tooFarLeft || tooFarRight || tooFarUp || tooFarDown) {
+        container.scrollTo(container.scrollWidth / 2, container.scrollHeight / 2);
+      }
+    }
+  };
+
+  function getNeighborIndexes(index, cols, total) {
     const neighbors = [];
     const rowSize = cols;
     const offsets = [
@@ -43,7 +86,7 @@ export default function App() {
 
       if (
         neighbor >= 0 &&
-        neighbor < digits.length &&
+        neighbor < total &&
         Math.abs(neighborRow - row) <= 1 &&
         Math.abs(neighborCol - col) <= 1
       ) {
@@ -51,36 +94,11 @@ export default function App() {
       }
     }
     return neighbors;
-  };
-
-  validIndexes.forEach((idx) => {
-    getNeighborIndexes(idx).forEach((n) => shakingIndexes.add(n));
-  });
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTo(container.scrollWidth / 2, container.scrollHeight / 2);
-    }
-  }, []);
-
-  const handleScroll = () => {
-    const container = containerRef.current;
-    const buffer = 100;
-    if (container) {
-      const { scrollTop, scrollLeft, scrollHeight, scrollWidth, clientHeight, clientWidth } = container;
-      if (
-        scrollLeft < buffer || scrollLeft > scrollWidth - clientWidth - buffer ||
-        scrollTop < buffer || scrollTop > scrollHeight - clientHeight - buffer
-      ) {
-        container.scrollTo(scrollWidth / 2, scrollHeight / 2);
-      }
-    }
-  };
+  }
 
   const handleDigitClick = (idx) => {
     if (!validIndexes.has(idx)) return;
-    const neighbors = getNeighborIndexes(idx);
+    const neighbors = getNeighborIndexes(idx, cols, digits.length);
     neighbors.push(idx);
     setHighlightedIndexes(new Set(neighbors));
     setSortedIndexes((prev) => (prev.includes(idx) ? prev : [...prev, idx]));
@@ -89,30 +107,29 @@ export default function App() {
   const handleBinClick = (binNum) => {
     setSelectedBin(binNum);
     setAnimatingIndexes(new Set(highlightedIndexes));
-
+  
     const binEl = binRefs.current[binNum - 1];
-    const containerRect = containerRef.current.getBoundingClientRect();
     const binRect = binEl.getBoundingClientRect();
-
+  
     requestAnimationFrame(() => {
       highlightedIndexes.forEach((idx) => {
         const digitSpan = spanRefs.current[idx];
         if (!digitSpan) return;
-
+  
         const digitRect = digitSpan.getBoundingClientRect();
         const dx = binRect.left + binRect.width / 2 - digitRect.left;
         const dy = binRect.top + binRect.height / 2 - digitRect.top;
-
+  
         digitSpan.style.setProperty("--bin-x", `${dx}px`);
         digitSpan.style.setProperty("--bin-y", `${dy}px`);
         digitSpan.classList.add("fly-to-bin");
       });
     });
-
+  
     setTimeout(() => {
       setSortedIndexes((prev) => prev.filter((idx) => !highlightedIndexes.has(idx)));
       setAnimatingIndexes(new Set());
-
+  
       highlightedIndexes.forEach((idx) => {
         const span = spanRefs.current[idx];
         if (span) {
@@ -121,37 +138,62 @@ export default function App() {
           span.style.removeProperty("--bin-y");
         }
       });
-
+  
       setHighlightedIndexes(new Set());
       setBinProgress((prev) => {
         const copy = [...prev];
         copy[binNum - 1] = Math.min(copy[binNum - 1] + 10, 100);
         return copy;
       });
+  
+      // 👇 Random scroll after bin animation
+      const container = containerRef.current;
+      if (container) {
+        const randomX = Math.random() * container.scrollWidth;
+        const randomY = Math.random() * container.scrollHeight;
+        container.scrollTo({
+          left: randomX,
+          top: randomY,
+          
+        });
+      }
     }, 2500);
   };
-
+  
   const totalProgress = Math.floor(
     binProgress.reduce((acc, val) => acc + val, 0) / binProgress.length
   );
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen w-screen bg-[#050b12] text-cyan-300 text-3xl scanlines">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-4xl font-bold glow">Initializing Macrodata Refinement...</div>
+          <div className="loader"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fisheye-effect scale-[0.89] origin-center flex flex-col h-screen bg-[#050b12] text-cyan-300 font-mono text-xl">
-
-      {/* Top Banner */}
+      {/* Banner */}
       <div className="flex justify-between items-center px-6 py-3 border-b border-cyan-400 text-cyan-300 text-lg uppercase tracking-wide scanlines glow">
-        <div className="text-left">Cold Harbor</div>
-        <div className="text-right">{totalProgress}% Complete</div>
+        <div className="text-left text-6xl font-orbitron">Cold Harbor</div>
+        <div className="flex items-center gap-10 text-3xl font-orbitron">
+          <span>{totalProgress}% Complete</span>
+          <img src="/lumonlogo.png" alt="Lumon Logo" className="h-40 w-auto opacity-100" />
+        </div>
       </div>
 
-      {/* Number Grid */}
+      {/* Digits Grid */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
         className="flex-1 overflow-scroll"
       >
         <div className="w-[500vw] h-[500vh] relative">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-10 min-w-[8000px]">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-[8000px] min-h-[8000px]">
             <div className="grid grid-cols-[repeat(100,minmax(3rem,1fr))] gap-x-10 gap-y-10 relative">
               {digits.map((digit, idx) => {
                 const isSorted = sortedIndexes.includes(idx);
@@ -160,8 +202,7 @@ export default function App() {
                 const isAnimating = animatingIndexes.has(idx);
                 const isShaking = shakingIndexes.has(idx);
 
-                let classes =
-                  "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform glow";
+                let classes = "text-5xl leading-none cursor-pointer transition-transform duration-75 will-change-transform glow";
                 if (isSorted) {
                   classes += " text-cyan-300 scale-110";
                 } else if (isAnimating) {
